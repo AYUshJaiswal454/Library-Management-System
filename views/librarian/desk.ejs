@@ -1,0 +1,300 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <span>Desk Operations Dashboard</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Circulation Desk — Open of Day Operations</h1>
+    <div class="page-subtitle">Immediate checkout, check-in, hold targeting, and real-time operational status</div>
+  </div>
+
+  <div>
+    <span class="mono" style="font-size: 13px; background: #e2e8f0; padding: 4px 8px; border: 1px solid var(--color-border);">
+      Desk Operator: <strong><%= currentUser.name %></strong>
+    </span>
+  </div>
+</div>
+
+<!-- Operational Metric Grid (Operational First) -->
+<div class="grid-4" style="margin-bottom: 20px;">
+  <div class="stat-box">
+    <div class="stat-label">Today's Issues</div>
+    <div class="stat-value"><%= todayIssuesCount %></div>
+    <div class="stat-subtext">Issued at desk today</div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-label">Today's Returns</div>
+    <div class="stat-value"><%= todayReturnsCount %></div>
+    <div class="stat-subtext">Processed check-ins</div>
+  </div>
+
+  <div class="stat-box <%= overdueLoansCount > 0 ? 'stat-danger' : '' %>">
+    <div class="stat-label">Active Overdues</div>
+    <div class="stat-value"><%= overdueLoansCount %></div>
+    <div class="stat-subtext"><a href="/librarian/overdues">View overdue ledger →</a></div>
+  </div>
+
+  <div class="stat-box <%= holdsAwaitingPickupCount > 0 ? 'stat-warning' : '' %>">
+    <div class="stat-label">Holds Awaiting Pickup</div>
+    <div class="stat-value"><%= holdsAwaitingPickupCount %></div>
+    <div class="stat-subtext"><a href="/librarian/holds">View pull list →</a></div>
+  </div>
+</div>
+
+<div class="grid-4" style="margin-bottom: 24px;">
+  <div class="stat-box">
+    <div class="stat-label">Total Active Loans</div>
+    <div class="stat-value"><%= activeLoansCount %></div>
+    <div class="stat-subtext">Currently circulating</div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-label">Pending Hold Queue</div>
+    <div class="stat-value"><%= pendingHoldsCount %></div>
+    <div class="stat-subtext">Patrons in FIFO queue</div>
+  </div>
+
+  <div class="stat-box <%= damagedOrLostCount > 0 ? 'stat-danger' : '' %>">
+    <div class="stat-label">Damaged / Lost Copies</div>
+    <div class="stat-value"><%= damagedOrLostCount %></div>
+    <div class="stat-subtext">Non-circulating inventory</div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-label">Policy Lending Period</div>
+    <div class="stat-value"><%= settings.loanPeriodDays %> <span style="font-size: 13px; font-weight: normal;">Days</span></div>
+    <div class="stat-subtext"><a href="/librarian/settings">Configure policies →</a></div>
+  </div>
+</div>
+
+<!-- Desk Circulation Transaction Forms -->
+<div class="grid-2" style="margin-bottom: 24px;">
+  <!-- Issue / Checkout Form -->
+  <div class="panel" style="border-top: 3px solid var(--color-gov-navy);">
+    <div class="panel-header">
+      <h2 class="panel-title">1. Issue Book (Checkout)</h2>
+    </div>
+
+    <form action="/librarian/issue" method="POST" autocomplete="off">
+      <div class="form-group">
+        <label for="issueMemberId" class="form-label required">Member ID or Email</label>
+        <input 
+          type="text" 
+          id="issueMemberId" 
+          name="memberIdentifier" 
+          class="form-control" 
+          placeholder="e.g. MEM-2026-0101 or member@org.edu" 
+          required
+        >
+        <span class="form-hint">Scanned patron card or entered Member ID</span>
+      </div>
+
+      <div class="form-group">
+        <label for="issueBarcode" class="form-label required">Accession Barcode</label>
+        <input 
+          type="text" 
+          id="issueBarcode" 
+          name="copyBarcode" 
+          class="form-control mono" 
+          placeholder="e.g. BC-9780132350884-01" 
+          required
+        >
+        <span class="form-hint">Physical barcode printed on the book copy</span>
+      </div>
+
+      <div id="eligibilityDiagnostic" style="display: none; margin-bottom: 16px;"></div>
+
+      <div class="form-group">
+        <label for="issueNotes" class="form-label">Desk Notes (Optional)</label>
+        <input type="text" id="issueNotes" name="notes" class="form-control" placeholder="Special loan instructions / condition notes">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Process Checkout & Issue</button>
+    </form>
+  </div>
+
+  <!-- Return / Check-in Form -->
+  <div class="panel" style="border-top: 3px solid #15803d;">
+    <div class="panel-header">
+      <h2 class="panel-title">2. Return Book (Check-in)</h2>
+    </div>
+
+    <form action="/librarian/return" method="POST" autocomplete="off">
+      <div class="form-group">
+        <label for="returnBarcode" class="form-label required">Accession Barcode</label>
+        <input 
+          type="text" 
+          id="returnBarcode" 
+          name="copyBarcode" 
+          class="form-control mono" 
+          placeholder="e.g. BC-9780132350884-01" 
+          required
+        >
+        <span class="form-hint">Scan barcode from returned physical book</span>
+      </div>
+
+      <div class="form-group">
+        <label for="conditionUpdate" class="form-label">Inspected Physical Condition</label>
+        <select id="conditionUpdate" name="conditionUpdate" class="form-control">
+          <option value="">Maintain Existing Condition</option>
+          <option value="GOOD">Good (Ready for shelf / hold)</option>
+          <option value="FAIR">Fair (Minor wear)</option>
+          <option value="POOR">Poor (Heavy wear)</option>
+          <option value="DAMAGED">DAMAGED (Flag for repair / withdrawal)</option>
+        </select>
+        <span class="form-hint">Marking DAMAGED immediately halts circulation for this copy.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="returnNotes" class="form-label">Check-in Notes (Optional)</label>
+        <input type="text" id="returnNotes" name="notes" class="form-control" placeholder="e.g. Returned at main desk">
+      </div>
+
+      <button type="submit" class="btn btn-block" style="background-color: #15803d; color: white;">
+        Process Check-in & Target Holds
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Low Availability & Holds Awaiting Pickup Row -->
+<div class="grid-2" style="margin-bottom: 24px;">
+  <!-- Holds Awaiting Pickup Table -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Holds Awaiting Pickup (Shelf Pull List)</h2>
+      <a href="/librarian/holds" class="btn btn-sm">Manage Holds</a>
+    </div>
+
+    <% if (pickupHolds.length === 0) { %>
+      <div class="empty-state" style="padding: 16px;">
+        <div class="empty-desc">No reserved copies currently awaiting member pickup.</div>
+      </div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title & Barcode</th>
+              <th>Reserved Patron</th>
+              <th>Pickup Deadline</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% pickupHolds.forEach(function(hold) { %>
+              <tr>
+                <td>
+                  <strong><%= hold.book ? hold.book.title : '—' %></strong>
+                  <div style="font-size: 11px;"><span class="mono"><%= hold.bookCopy ? hold.bookCopy.barcode : '—' %></span></div>
+                </td>
+                <td>
+                  <div><%= hold.user ? hold.user.name : '—' %></div>
+                  <div style="font-size: 11px; color: var(--color-text-muted);"><span class="mono"><%= hold.user ? hold.user.memberId : '' %></span></div>
+                </td>
+                <td>
+                  <strong style="color: #1e40af;"><%= formatDate(hold.pickupDeadline) %></strong>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Zero-Availability High-Demand Titles -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Zero-Availability / Hold Backlog</h2>
+      <a href="/librarian/books" class="btn btn-sm">All Titles</a>
+    </div>
+
+    <% if (highDemandTitles.length === 0) { %>
+      <div class="empty-state" style="padding: 16px;">
+        <div class="empty-desc">All catalogued titles currently have shelf stock or zero waiting hold queues.</div>
+      </div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Copies (Avail / Total)</th>
+              <th>Queued Patrons</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% highDemandTitles.forEach(function(title) { %>
+              <% const stats = availMap[title._id.toString()]; %>
+              <tr>
+                <td><strong><a href="/catalogue/<%= title._id %>"><%= title.title %></a></strong></td>
+                <td><span class="status-badge status-overdue">[0 / <%= stats.total %> ON SHELF]</span></td>
+                <td><strong style="color: #b45309;"><%= stats.pendingHolds %> in queue</strong></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Recent Desk Activity Log -->
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">Recent Circulation Desk Transactions</h2>
+    <a href="/librarian/audit" class="btn btn-sm">Full Audit Trail</a>
+  </div>
+
+  <% if (recentLoans.length === 0) { %>
+    <div class="empty-state" style="padding: 16px;">
+      <div class="empty-desc">No circulation transactions recorded yet today.</div>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Type</th>
+            <th>Barcode</th>
+            <th>Title</th>
+            <th>Patron</th>
+            <th>Status / Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% recentLoans.forEach(function(tx) { %>
+            <tr>
+              <td style="font-size: 12px;"><%= formatDateTime(tx.updatedAt) %></td>
+              <td>
+                <% if (tx.status === 'RETURNED') { %>
+                  <span class="status-badge status-available">[RETURNED]</span>
+                <% } else if (tx.status === 'OVERDUE') { %>
+                  <span class="status-badge status-overdue">[OVERDUE]</span>
+                <% } else { %>
+                  <span class="status-badge status-issued">[ISSUED]</span>
+                <% } %>
+              </td>
+              <td><span class="mono"><%= tx.bookCopy ? tx.bookCopy.barcode : '—' %></span></td>
+              <td><strong><%= tx.book ? tx.book.title : '—' %></strong></td>
+              <td><%= tx.user ? tx.user.name : '—' %> (<span class="mono"><%= tx.user ? tx.user.memberId : '' %></span>)</td>
+              <td>
+                <% if (tx.status === 'RETURNED') { %>
+                  <span>Returned: <%= formatDate(tx.returnedAt) %></span>
+                <% } else { %>
+                  <span>Due: <%= formatDate(tx.dueDate) %></span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

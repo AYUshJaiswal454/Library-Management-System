@@ -1,0 +1,78 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/member/dashboard">Dashboard</a> / <span>My Hold Reservations</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">My Hold Queue & Pickup Requests</h1>
+    <div class="page-subtitle">Track your position in reservation queues and claim targeted copies awaiting pickup</div>
+  </div>
+</div>
+
+<div class="panel">
+  <% if (holds.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">⏳</div>
+      <div class="empty-title">No Active Hold Reservations</div>
+      <div class="empty-desc">You are not currently in queue for any checked-out titles. When all copies of a book are borrowed, you can place a hold directly from its catalogue page.</div>
+      <a href="/catalogue" class="btn btn-primary">Search Catalogue</a>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Title & Author</th>
+            <th>Request Date</th>
+            <th>Queue Position / Status</th>
+            <th>Pickup Deadline</th>
+            <th>Held Copy Barcode</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% holds.forEach(function(hold) { %>
+            <tr>
+              <td>
+                <strong><a href="/catalogue/<%= hold.book._id %>"><%= hold.book.title %></a></strong>
+                <div style="font-size: 12px; color: var(--color-text-secondary);"><%= hold.book.author %></div>
+              </td>
+              <td><%= formatDate(hold.requestDate) %></td>
+              <td>
+                <% if (hold.status === 'AVAILABLE_FOR_PICKUP') { %>
+                  <span class="status-badge status-reserved">[READY FOR PICKUP AT DESK]</span>
+                <% } else { %>
+                  <span class="status-badge status-neutral">[QUEUE POSITION: #<%= hold.queuePosition %>]</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (hold.status === 'AVAILABLE_FOR_PICKUP') { %>
+                  <strong style="color: #1e40af;"><%= formatDate(hold.pickupDeadline) %></strong>
+                  <div style="font-size: 11px; color: var(--color-text-muted);">Please claim before expiry</div>
+                <% } else { %>
+                  <span style="color: var(--color-text-muted);">Awaiting return</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (hold.bookCopy) { %>
+                  <span class="mono"><%= hold.bookCopy.barcode %></span>
+                <% } else { %>
+                  <span style="color: var(--color-text-muted);">—</span>
+                <% } %>
+              </td>
+              <td>
+                <form action="/member/holds/<%= hold._id %>/cancel" method="POST">
+                  <button type="submit" class="btn btn-sm btn-danger" data-confirm="Cancel this hold reservation?">Cancel Hold</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

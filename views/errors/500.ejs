@@ -1,0 +1,14 @@
+<%- include('../partials/header') %>
+
+<div style="max-width: 600px; margin: 50px auto; text-align: center;">
+  <div class="panel">
+    <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+    <h1 class="page-title" style="margin-bottom: 8px;">500 — System Error</h1>
+    <p style="color: var(--color-text-secondary); margin-bottom: 20px;">
+      <%= typeof message !== 'undefined' ? message : 'An unexpected error occurred while processing this transaction. The issue has been logged.' %>
+    </p>
+    <a href="/" class="btn btn-primary">Return to Homepage</a>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,114 @@
+<%- include('../../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <span>Holds Management</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Hold Queues & Desk Pull Lists</h1>
+    <div class="page-subtitle">Track targeted copies awaiting patron pickup and queued title reservations</div>
+  </div>
+</div>
+
+<!-- 1. Holds Ready for Pickup (Pull List) -->
+<div class="panel" style="margin-bottom: 24px; border-top: 3px solid #1d4ed8;">
+  <div class="panel-header">
+    <h2 class="panel-title">1. Holds Awaiting Pickup (Locked & Targeted Copies)</h2>
+    <span class="status-badge status-reserved">[<%= pickupHolds.length %> AWAITING PICKUP]</span>
+  </div>
+
+  <% if (pickupHolds.length === 0) { %>
+    <div class="empty-state" style="padding: 16px;">
+      <div class="empty-desc">No copies currently awaiting patron pickup.</div>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Accession Barcode</th>
+            <th>Title & Author</th>
+            <th>Patron Name & ID</th>
+            <th>Shelf Location</th>
+            <th>Pickup Expiration Deadline</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pickupHolds.forEach(function(hold) { %>
+            <tr>
+              <td><span class="mono"><%= hold.bookCopy ? hold.bookCopy.barcode : '—' %></span></td>
+              <td>
+                <strong><a href="/catalogue/<%= hold.book._id %>"><%= hold.book.title %></a></strong>
+                <div style="font-size: 12px; color: var(--color-text-secondary);"><%= hold.book.author %></div>
+              </td>
+              <td>
+                <strong><%= hold.user ? hold.user.name : '—' %></strong>
+                <div style="font-size: 11px;"><span class="mono"><%= hold.user ? hold.user.memberId : '' %></span></div>
+              </td>
+              <td><%= hold.bookCopy ? hold.bookCopy.shelfLocation : 'Circulation Desk' %></td>
+              <td>
+                <strong style="color: #1e40af;"><%= formatDate(hold.pickupDeadline) %></strong>
+                <div style="font-size: 11px; color: var(--color-text-muted);">Notified: <%= formatDate(hold.notifiedAt) %></div>
+              </td>
+              <td>
+                <form action="/librarian/holds/<%= hold._id %>/cancel" method="POST" style="display: inline;">
+                  <button type="submit" class="btn btn-sm btn-danger" data-confirm="Cancel this hold and unlock the copy for the next patron or shelf?">Cancel / Unlock Copy</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<!-- 2. Queued / Pending Holds -->
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">2. Queued Reservations (FIFO Pending Queue)</h2>
+    <span class="status-badge status-neutral">[<%= pendingHolds.length %> QUEUED]</span>
+  </div>
+
+  <% if (pendingHolds.length === 0) { %>
+    <div class="empty-state" style="padding: 16px;">
+      <div class="empty-desc">No patrons currently waiting in pending hold queues.</div>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Queue #</th>
+            <th>Title & Author</th>
+            <th>Request Date</th>
+            <th>Patron</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pendingHolds.forEach(function(hold) { %>
+            <tr>
+              <td><strong>#<%= hold.queuePosition %></strong></td>
+              <td>
+                <strong><a href="/catalogue/<%= hold.book._id %>"><%= hold.book.title %></a></strong>
+                <div style="font-size: 12px; color: var(--color-text-secondary);"><%= hold.book.author %></div>
+              </td>
+              <td><%= formatDate(hold.requestDate) %></td>
+              <td><%= hold.user ? hold.user.name : '—' %> (<span class="mono"><%= hold.user ? hold.user.memberId : '' %></span>)</td>
+              <td>
+                <form action="/librarian/holds/<%= hold._id %>/cancel" method="POST">
+                  <button type="submit" class="btn btn-sm btn-danger" data-confirm="Cancel this queued hold?">Cancel</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../../partials/footer') %>

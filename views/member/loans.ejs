@@ -1,0 +1,84 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/member/dashboard">Dashboard</a> / <span>My Active Loans</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">My Active Loans & Due Dates</h1>
+    <div class="page-subtitle">Track your checked out books, renewal extensions, and return deadlines</div>
+  </div>
+</div>
+
+<div class="panel">
+  <% if (loans.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">📚</div>
+      <div class="empty-title">No Books Currently Borrowed</div>
+      <div class="empty-desc">You do not have any active loans on your account. Search the catalogue to discover and borrow books.</div>
+      <a href="/catalogue" class="btn btn-primary">Browse Catalogue</a>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Accession Barcode</th>
+            <th>Book Title & Author</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Renewals</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% loans.forEach(function(loan) { %>
+            <% 
+              const isOverdue = loan.status === 'OVERDUE' || new Date(loan.dueDate) < new Date();
+              const diffDays = Math.ceil((new Date(loan.dueDate) - new Date()) / (1000 * 60 * 60 * 24));
+            %>
+            <tr>
+              <td><span class="mono"><%= loan.bookCopy ? loan.bookCopy.barcode : '—' %></span></td>
+              <td>
+                <strong><a href="/catalogue/<%= loan.book._id %>"><%= loan.book.title %></a></strong>
+                <div style="font-size: 12px; color: var(--color-text-secondary);"><%= loan.book.author %></div>
+              </td>
+              <td><%= formatDate(loan.issuedAt) %></td>
+              <td>
+                <strong style="<%= isOverdue ? 'color: #b91c1c;' : '' %>">
+                  <%= formatDate(loan.dueDate) %>
+                </strong>
+                <div style="font-size: 11px; color: var(--color-text-muted);">
+                  <% if (isOverdue) { %>
+                    <span style="color: #b91c1c; font-weight: 600;"><%= Math.abs(diffDays) %> day(s) overdue</span>
+                  <% } else { %>
+                    <span><%= diffDays %> day(s) remaining</span>
+                  <% } %>
+                </div>
+              </td>
+              <td><%= loan.renewedCount || 0 %> time(s)</td>
+              <td>
+                <span class="status-badge <%= isOverdue ? 'status-overdue' : 'status-available' %>">
+                  <%= isOverdue ? '[OVERDUE]' : '[ACTIVE]' %>
+                </span>
+              </td>
+              <td>
+                <% if (!isOverdue) { %>
+                  <form action="/member/loans/<%= loan._id %>/renew" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-sm">Renew Loan</button>
+                  </form>
+                <% } else { %>
+                  <span style="font-size: 12px; color: #b91c1c; font-weight: 600;">Return Required</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

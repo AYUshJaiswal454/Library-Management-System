@@ -1,0 +1,59 @@
+<%- include('../partials/header') %>
+
+<div style="max-width: 540px; margin: 30px auto;">
+  <div class="panel">
+    <div class="panel-header">
+      <h1 class="panel-title" style="font-size: 18px;">New Member Registration</h1>
+    </div>
+
+    <p style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 20px;">
+      Registering generates a unique Institutional Member ID, enabling immediate book searches, hold placement, and circulation privileges.
+    </p>
+
+    <form action="/auth/register" method="POST">
+      <div class="form-group">
+        <label for="name" class="form-label required">Full Legal Name</label>
+        <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Rahul Sharma" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label required">Email Address</label>
+        <input type="email" id="email" name="email" class="form-control" placeholder="e.g. rahul.sharma@institution.edu" required>
+        <span class="form-hint">Official notices and hold pickup alerts will be delivered here.</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="departmentOrBatch" class="form-label">Department / Batch</label>
+          <input type="text" id="departmentOrBatch" name="departmentOrBatch" class="form-control" placeholder="e.g. CS Dept / Batch 2026">
+        </div>
+        <div class="form-group">
+          <label for="phone" class="form-label">Contact Phone</label>
+          <input type="tel" id="phone" name="phone" class="form-control" placeholder="e.g. +91 98765 43210">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="password" class="form-label required">Password</label>
+          <input type="password" id="password" name="password" class="form-control" minlength="6" required>
+          <span class="form-hint">Minimum 6 characters</span>
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword" class="form-label required">Confirm Password</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" minlength="6" required>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <button type="submit" class="btn btn-primary btn-block">Complete Registration</button>
+      </div>
+    </form>
+
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-border); font-size: 13px; text-align: center;">
+      <span>Already have an account? <a href="/auth/login">Sign in</a></span>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

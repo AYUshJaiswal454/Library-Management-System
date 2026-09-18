@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title + ' | ' : '' %><%= typeof settings !== 'undefined' && settings.libraryName ? settings.libraryName : 'Central Library' %></title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <!-- Civic Top Bar -->
+  <aside class="gov-top-bar" aria-label="Official Institutional Portal Notice">
+    <div class="container">
+      <span>Official Library Circulation & Holdings System · <%= typeof settings !== 'undefined' && settings.libraryCode ? settings.libraryCode : 'CIL' %></span>
+      <span>Operating Hours: 08:30 – 20:00 IST</span>
+    </div>
+  </aside>
+
+  <!-- Site Banner -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand-section">
+        <div class="brand-icon" aria-hidden="true">🏛️</div>
+        <div>
+          <a href="/" class="brand-title"><%= typeof settings !== 'undefined' && settings.libraryName ? settings.libraryName : 'Central Institutional Library' %></a>
+          <div class="brand-subtitle">Real-Time Inventory, Hold Queues & Circulation Management</div>
+        </div>
+      </div>
+
+      <div class="header-tools">
+        <% if (currentUser) { %>
+          <span class="user-badge">
+            <%= currentUser.name %>
+            <span class="role-tag"><%= currentUser.role %></span>
+          </span>
+        <% } %>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Navigation -->
+  <nav class="nav-main" aria-label="Primary Navigation">
+    <div class="nav-container">
+      <ul class="nav-links">
+        <li><a href="/catalogue" class="<%= currentPath === '/catalogue' || currentPath.startsWith('/catalogue/') ? 'active' : '' %>">Public Catalogue</a></li>
+
+        <% if (currentUser && currentUser.role === 'MEMBER') { %>
+          <li><a href="/member/dashboard" class="<%= currentPath === '/member/dashboard' ? 'active' : '' %>">Member Dashboard</a></li>
+          <li><a href="/member/loans" class="<%= currentPath === '/member/loans' ? 'active' : '' %>">My Loans</a></li>
+          <li><a href="/member/holds" class="<%= currentPath === '/member/holds' ? 'active' : '' %>">Hold Requests</a></li>
+          <li><a href="/member/fines" class="<%= currentPath === '/member/fines' ? 'active' : '' %>">Fines & Ledger</a></li>
+          <li><a href="/member/history" class="<%= currentPath === '/member/history' ? 'active' : '' %>">History</a></li>
+        <% } %>
+
+        <% if (currentUser && ['LIBRARIAN', 'ADMIN'].includes(currentUser.role)) { %>
+          <li><a href="/librarian/desk" class="<%= currentPath === '/librarian/desk' ? 'active' : '' %>">Circulation Desk</a></li>
+          <li><a href="/librarian/books" class="<%= currentPath.startsWith('/librarian/books') ? 'active' : '' %>">Titles & Copies</a></li>
+          <li><a href="/librarian/members" class="<%= currentPath.startsWith('/librarian/members') ? 'active' : '' %>">Member Records</a></li>
+          <li><a href="/librarian/holds" class="<%= currentPath === '/librarian/holds' ? 'active' : '' %>">Holds Queue</a></li>
+          <li><a href="/librarian/overdues" class="<%= currentPath === '/librarian/overdues' ? 'active' : '' %>">Overdues & Fines</a></li>
+          <li><a href="/librarian/audit" class="<%= currentPath === '/librarian/audit' ? 'active' : '' %>">Audit Log</a></li>
+          <li><a href="/librarian/settings" class="<%= currentPath === '/librarian/settings' ? 'active' : '' %>">Policy Settings</a></li>
+        <% } %>
+      </ul>
+
+      <div class="nav-auth">
+        <% if (currentUser) { %>
+          <% if (currentUser.role === 'MEMBER') { %>
+            <a href="/member/notifications" style="color: #ffffff; text-decoration: none; position: relative;">
+              🔔 Alerts <% if (unreadNotificationCount > 0) { %><span style="background: #dc2626; color: white; border-radius: 999px; padding: 1px 6px; font-size: 11px;"><%= unreadNotificationCount %></span><% } %>
+            </a>
+          <% } %>
+          <a href="/auth/profile" style="color: #ffffff;">Profile</a>
+          <form action="/auth/logout" method="POST" style="display: inline; margin: 0;">
+            <button type="submit" class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4);">Sign Out</button>
+          </form>
+        <% } else { %>
+          <a href="/auth/login" class="btn btn-sm btn-primary" style="background: #1e3a5f; border-color: #60a5fa;">Sign In</a>
+          <a href="/auth/register" class="btn btn-sm" style="background: #ffffff; color: #0f1c2e;">Register Member</a>
+        <% } %>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content" id="main-content">
+    <div class="alert-container">
+      <%- include('./alerts') %>
+    </div>

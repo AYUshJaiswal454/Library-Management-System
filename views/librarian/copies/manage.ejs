@@ -1,0 +1,168 @@
+<%- include('../../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <a href="/librarian/books">Titles</a> / <span>Manage Copies (<%= book.title %>)</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Physical Copies Inventory: <%= book.title %></h1>
+    <div class="page-subtitle">ISBN: <span class="mono"><%= book.isbn %></span> · Author: <%= book.author %></div>
+  </div>
+
+  <div>
+    <a href="/catalogue/<%= book._id %>" class="btn btn-sm">Public View</a>
+  </div>
+</div>
+
+<!-- Derived Inventory Status KPI -->
+<div class="grid-4" style="margin-bottom: 20px;">
+  <div class="stat-box">
+    <div class="stat-label">Total Holdings</div>
+    <div class="stat-value"><%= availability.total %></div>
+    <div class="stat-subtext">Registered copies</div>
+  </div>
+
+  <div class="stat-box stat-success">
+    <div class="stat-label">Available on Shelf</div>
+    <div class="stat-value"><%= availability.available %></div>
+    <div class="stat-subtext">Ready for checkout</div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-label">Issued on Loan</div>
+    <div class="stat-value"><%= availability.issued %></div>
+    <div class="stat-subtext">In circulation</div>
+  </div>
+
+  <div class="stat-box <%= (availability.damaged > 0 || availability.lost > 0) ? 'stat-danger' : '' %>">
+    <div class="stat-label">Damaged / Lost / Maint</div>
+    <div class="stat-value"><%= availability.damaged + availability.lost + availability.maintenance %></div>
+    <div class="stat-subtext">Non-circulating items</div>
+  </div>
+</div>
+
+<div class="grid-sidebar">
+  <!-- Register New Copy Form -->
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Add Physical Copy</h2>
+      </div>
+
+      <form action="/librarian/books/<%= book._id %>/copies" method="POST">
+        <div class="form-group">
+          <label for="barcode" class="form-label required">Accession Barcode</label>
+          <input 
+            type="text" 
+            id="barcode" 
+            name="barcode" 
+            class="form-control mono" 
+            placeholder="e.g. BC-<%= book.isbn.replace(/[^A-Z0-9]/g, '') %>-<%= (copies.length + 1).toString().padStart(2, '0') %>" 
+            required
+          >
+          <span class="form-hint">Must be unique across entire library.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="shelfLocation" class="form-label required">Shelving Location</label>
+          <input type="text" id="shelfLocation" name="shelfLocation" class="form-control" value="Main Stacks - Row 2 / Shelf A" required>
+        </div>
+
+        <div class="form-group">
+          <label for="condition" class="form-label required">Physical Condition</label>
+          <select id="condition" name="condition" class="form-control" required>
+            <option value="NEW">New (Pristine)</option>
+            <option value="GOOD" selected>Good</option>
+            <option value="FAIR">Fair (Minor Wear)</option>
+            <option value="POOR">Poor (Heavy Wear)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="price" class="form-label">Replacement Price (₹)</label>
+          <input type="number" id="price" name="price" class="form-control" value="0" min="0">
+        </div>
+
+        <div class="form-group">
+          <label for="notes" class="form-label">Accession Notes</label>
+          <input type="text" id="notes" name="notes" class="form-control" placeholder="Acquisition / donation info">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">+ Register Copy</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Copies Inventory Table & Inline Status Modification -->
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Holdings Breakdown & Status Controls</h2>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Copy #</th>
+              <th>Barcode</th>
+              <th>Shelf Location</th>
+              <th>Condition</th>
+              <th>Status</th>
+              <th>Status Transition Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (copies.length === 0) { %>
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 20px;">No physical copies registered for this title.</td>
+              </tr>
+            <% } else { %>
+              <% copies.forEach(function(copy) { %>
+                <tr>
+                  <td><strong>#<%= copy.copyNumber %></strong></td>
+                  <td><span class="mono"><%= copy.barcode %></span></td>
+                  <td><%= copy.shelfLocation %></td>
+                  <td><%= copy.condition %></td>
+                  <td>
+                    <% if (copy.status === 'AVAILABLE') { %>
+                      <span class="status-badge status-available">[AVAILABLE]</span>
+                    <% } else if (copy.status === 'ISSUED') { %>
+                      <span class="status-badge status-issued">[ISSUED]</span>
+                    <% } else if (copy.status === 'RESERVED') { %>
+                      <span class="status-badge status-reserved">[RESERVED]</span>
+                    <% } else if (copy.status === 'DAMAGED') { %>
+                      <span class="status-badge status-damaged">[DAMAGED]</span>
+                    <% } else if (copy.status === 'LOST') { %>
+                      <span class="status-badge status-lost">[LOST]</span>
+                    <% } else { %>
+                      <span class="status-badge status-maintenance">[<%= copy.status %>]</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <!-- Status Transition Controls -->
+                    <form action="/librarian/books/<%= book._id %>/copies/status" method="POST" style="display: flex; gap: 4px; align-items: center;">
+                      <input type="hidden" name="copyId" value="<%= copy._id %>">
+                      
+                      <select name="newStatus" class="form-control" style="font-size: 12px; padding: 2px 6px; height: 28px; width: 130px;">
+                        <option value="AVAILABLE" <%= copy.status === 'AVAILABLE' ? 'selected' : '' %>>AVAILABLE</option>
+                        <option value="DAMAGED" <%= copy.status === 'DAMAGED' ? 'selected' : '' %>>DAMAGED</option>
+                        <option value="LOST" <%= copy.status === 'LOST' ? 'selected' : '' %>>LOST</option>
+                        <option value="MAINTENANCE" <%= copy.status === 'MAINTENANCE' ? 'selected' : '' %>>MAINTENANCE</option>
+                      </select>
+
+                      <button type="submit" class="btn btn-sm" style="padding: 2px 8px;">Apply</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

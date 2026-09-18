@@ -1,0 +1,34 @@
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-col" style="flex: 2; min-width: 260px;">
+        <h4><%= typeof settings !== 'undefined' && settings.libraryName ? settings.libraryName : 'Central Library' %></h4>
+        <p><%= typeof settings !== 'undefined' && settings.address ? settings.address : 'Knowledge Complex' %></p>
+        <p>Email: <%= typeof settings !== 'undefined' && settings.contactEmail ? settings.contactEmail : 'librarian@library.gov.in' %> · Phone: <%= typeof settings !== 'undefined' && settings.contactPhone ? settings.contactPhone : '+91 11 2345 6789' %></p>
+      </div>
+      <div class="footer-col" style="flex: 1; min-width: 200px;">
+        <h4>Circulation Rules</h4>
+        <ul style="list-style: none;">
+          <li>Lending Period: <strong><%= typeof settings !== 'undefined' ? settings.loanPeriodDays : 14 %> Days</strong></li>
+          <li>Max Loan Quota: <strong><%= typeof settings !== 'undefined' ? settings.maxLoanLimit : 4 %> Titles</strong></li>
+          <li>Overdue Fine: <strong><%= typeof settings !== 'undefined' ? settings.currencySymbol + settings.finePerDay : '₹5' %> / Day</strong></li>
+          <li>Grace Period: <strong><%= typeof settings !== 'undefined' ? settings.gracePeriodDays : 1 %> Day(s)</strong></li>
+        </ul>
+      </div>
+      <div class="footer-col" style="flex: 1; min-width: 200px;">
+        <h4>Institutional Standards</h4>
+        <p>WCAG 2.1 Level AA Compliant</p>
+        <p>Deterministic Copy-Level Inventory Engine</p>
+        <p>Real-Time FIFO Hold Targeting</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <%= new Date().getFullYear() %> Institutional Library & Resource Management System. All rights reserved.</span>
+      <span>Public Institution Information System</span>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

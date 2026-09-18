@@ -1,0 +1,93 @@
+<%- include('../../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <span>Member Records</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Patron Directory & Member Dossiers</h1>
+    <div class="page-subtitle">View member loan quotas, overdue counts, fine balances, and account restrictions</div>
+  </div>
+</div>
+
+<!-- Search Filter -->
+<div class="panel" style="margin-bottom: 20px;">
+  <form action="/librarian/members" method="GET" class="form-inline">
+    <div style="flex: 2;">
+      <input type="search" name="q" class="form-control" value="<%= searchQuery %>" placeholder="Search Member Name, Email, or Member ID (e.g. MEM-2026)...">
+    </div>
+    <button type="submit" class="btn btn-primary">Search Members</button>
+    <a href="/librarian/members" class="btn">Reset</a>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Member ID</th>
+          <th>Full Name</th>
+          <th>Email Address</th>
+          <th>Department / Batch</th>
+          <th>Active Loans</th>
+          <th>Unpaid Fines</th>
+          <th>Account Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (members.length === 0) { %>
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 20px;">No member records found.</td>
+          </tr>
+        <% } else { %>
+          <% members.forEach(function(member) { %>
+            <% const loanCount = loanMap[member._id.toString()] || 0; %>
+            <% const fineTotal = fineMap[member._id.toString()] || 0; %>
+            <tr>
+              <td><span class="mono"><%= member.memberId %></span></td>
+              <td><strong><%= member.name %></strong></td>
+              <td><%= member.email %></td>
+              <td><%= member.departmentOrBatch || '—' %></td>
+              <td>
+                <span class="mono"><%= loanCount %></span> loan(s)
+              </td>
+              <td>
+                <% if (fineTotal > 0) { %>
+                  <span style="color: #b91c1c; font-weight: 700;"><%= formatCurrency(fineTotal) %></span>
+                <% } else { %>
+                  <span style="color: #15803d;">₹0</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (member.isRestricted) { %>
+                  <span class="status-badge status-overdue">[RESTRICTED]</span>
+                <% } else { %>
+                  <span class="status-badge status-available">[ACTIVE]</span>
+                <% } %>
+              </td>
+              <td>
+                <a href="/librarian/members/<%= member._id %>" class="btn btn-sm btn-primary">View Member Record</a>
+              </td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <% if (totalPages > 1) { %>
+    <ul class="pagination">
+      <% for (let p = 1; p <= totalPages; p++) { %>
+        <li class="<%= currentPage === p ? 'active' : '' %>">
+          <a href="/librarian/members?page=<%= p %>&q=<%= encodeURIComponent(searchQuery) %>"><%= p %></a>
+        </li>
+      <% } %>
+    </ul>
+  <% } %>
+</div>
+
+<%- include('../../partials/footer') %>

@@ -1,0 +1,171 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/catalogue">Catalogue</a> / <span><%= book.title %></span>
+</div>
+
+<div class="page-header">
+  <div>
+    <span class="book-category"><%= book.category ? book.category.name : 'General' %></span>
+    <h1 class="page-title"><%= book.title %></h1>
+    <div class="page-subtitle">By <strong><%= book.author %></strong></div>
+  </div>
+
+  <div>
+    <% if (currentUser && ['LIBRARIAN', 'ADMIN'].includes(currentUser.role)) { %>
+      <a href="/librarian/books/<%= book._id %>/copies" class="btn btn-sm">Manage Physical Copies</a>
+      <a href="/librarian/books/<%= book._id %>/edit" class="btn btn-sm btn-primary">Edit Record</a>
+    <% } %>
+  </div>
+</div>
+
+<div class="grid-sidebar">
+  <!-- Left Sidebar / Bibliographic Details -->
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Bibliographic Record</h2>
+      </div>
+
+      <div style="font-size: 13px; line-height: 1.8;">
+        <div><strong>ISBN:</strong> <span class="mono"><%= book.isbn %></span></div>
+        <div><strong>Category:</strong> <%= book.category ? book.category.name : '—' %></div>
+        <div><strong>Publisher:</strong> <%= book.publisher || '—' %></div>
+        <div><strong>Publication Year:</strong> <%= book.publicationYear || '—' %></div>
+        <div><strong>Edition:</strong> <%= book.edition || 'Standard Edition' %></div>
+        <div><strong>Language:</strong> <%= book.language || 'English' %></div>
+        <div><strong>Call Number:</strong> <span class="mono"><%= book.callNumber || '—' %></span></div>
+      </div>
+
+      <% if (book.description) { %>
+        <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--color-border-light); font-size: 13px; color: var(--color-text-secondary);">
+          <strong>Synopsis:</strong>
+          <p style="margin-top: 4px;"><%= book.description %></p>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Active Hold Status or Hold Request Box -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Hold Queue Status</h2>
+      </div>
+
+      <% if (userHold) { %>
+        <% if (userHold.status === 'AVAILABLE_FOR_PICKUP') { %>
+          <div class="alert alert-success" style="margin-bottom: 0;">
+            <strong>✓ Ready for Desk Pickup!</strong>
+            <p style="font-size: 13px; margin-top: 4px;">
+              A targeted copy is awaiting pickup at the circulation desk until <strong><%= formatDate(userHold.pickupDeadline) %></strong>.
+            </p>
+            <a href="/member/holds" class="btn btn-sm btn-primary" style="margin-top: 8px;">View Pickup Details</a>
+          </div>
+        <% } else { %>
+          <div class="alert alert-info" style="margin-bottom: 0;">
+            <strong>Hold Request Active:</strong>
+            <p style="font-size: 13px; margin-top: 4px;">
+              You are currently at queue position <strong>#<%= userHold.queuePosition %></strong>.
+            </p>
+            <form action="/member/holds/<%= userHold._id %>/cancel" method="POST" style="margin-top: 8px;">
+              <button type="submit" class="btn btn-sm btn-danger" data-confirm="Are you sure you want to cancel your hold for this title?">Cancel Hold</button>
+            </form>
+          </div>
+        <% } %>
+      <% } else if (availability.available > 0) { %>
+        <div class="alert alert-success" style="margin-bottom: 0;">
+          <strong><%= availability.available %> Cop<%= availability.available === 1 ? 'y' : 'ies' %> Available:</strong>
+          <p style="font-size: 13px; margin-top: 4px;">
+            Copies are present in the stacks. Note down the barcode and shelf location to retrieve at the circulation desk.
+          </p>
+        </div>
+      <% } else { %>
+        <div class="alert alert-warning" style="margin-bottom: 12px;">
+          <strong>All Physical Copies Checked Out:</strong>
+          <p style="font-size: 13px; margin-top: 4px;">
+            <%= availability.pendingHolds %> patron(s) currently waiting in queue.
+          </p>
+        </div>
+
+        <% if (currentUser && currentUser.role === 'MEMBER') { %>
+          <form action="/catalogue/<%= book._id %>/reserve" method="POST">
+            <button type="submit" class="btn btn-block btn-blue">
+              Place Hold Reservation (Queue #<%= availability.pendingHolds + 1 %>)
+            </button>
+            <span class="form-hint" style="text-align: center;">When a copy is returned, you will be notified and given a pickup window.</span>
+          </form>
+        <% } else if (!currentUser) { %>
+          <a href="/auth/login?returnTo=/catalogue/<%= book._id %>" class="btn btn-block btn-primary">
+            Sign In to Reserve Title
+          </a>
+        <% } %>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Right Main Area / Real-Time Physical Holdings List -->
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Physical Holdings & Real-Time Availability</h2>
+        <span class="status-badge <%= availability.isAvailable ? 'status-available' : 'status-overdue' %>">
+          <%= availability.isAvailable ? `[${availability.available} OF ${availability.total} AVAILABLE]` : '[0 AVAILABLE ON SHELF]' %>
+        </span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">Copy</th>
+              <th>Accession Barcode</th>
+              <th>Shelving Location</th>
+              <th>Condition</th>
+              <th>Current Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (copies.length === 0) { %>
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 20px; color: var(--color-text-muted);">
+                  No physical copies catalogued for this title yet.
+                </td>
+              </tr>
+            <% } else { %>
+              <% copies.forEach(function(copy) { %>
+                <tr>
+                  <td><strong>#<%= copy.copyNumber %></strong></td>
+                  <td><span class="mono"><%= copy.barcode %></span></td>
+                  <td><strong><%= copy.shelfLocation %></strong></td>
+                  <td><%= copy.condition %></td>
+                  <td>
+                    <% if (copy.status === 'AVAILABLE') { %>
+                      <span class="status-badge status-available">[AVAILABLE ON SHELF]</span>
+                    <% } else if (copy.status === 'ISSUED') { %>
+                      <span class="status-badge status-issued">[CHECKED OUT ON LOAN]</span>
+                    <% } else if (copy.status === 'RESERVED') { %>
+                      <span class="status-badge status-reserved">[RESERVED FOR PICKUP]</span>
+                    <% } else if (copy.status === 'DAMAGED') { %>
+                      <span class="status-badge status-damaged">[DAMAGED / NOT CIRCULATING]</span>
+                    <% } else if (copy.status === 'LOST') { %>
+                      <span class="status-badge status-lost">[REPORTED LOST]</span>
+                    <% } else { %>
+                      <span class="status-badge status-maintenance">[<%= copy.status %>]</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if (currentUser && ['LIBRARIAN', 'ADMIN'].includes(currentUser.role)) { %>
+        <div style="margin-top: 16px; padding: 12px; background-color: #f8fafc; border: 1px solid var(--color-border); font-size: 13px;">
+          <strong>Staff Action:</strong> To issue one of the available copies above, enter the accession barcode at the <a href="/librarian/desk">Circulation Desk</a>.
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

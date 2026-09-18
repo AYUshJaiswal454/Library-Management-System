@@ -1,0 +1,87 @@
+<%- include('../../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <span>Audit Trail</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Circulation & System Audit Trail</h1>
+    <div class="page-subtitle">Immutable chronological log of all desk transactions, policy changes, and inventory state transitions</div>
+  </div>
+</div>
+
+<!-- Filter by Action -->
+<div class="panel" style="margin-bottom: 20px;">
+  <form action="/librarian/audit" method="GET" class="form-inline">
+    <label for="action" class="form-label" style="margin-bottom: 0;">Filter Action:</label>
+    <select id="action" name="action" class="form-control" style="width: auto;">
+      <option value="ALL">All Recorded Actions</option>
+      <% distinctActions.forEach(function(act) { %>
+        <option value="<%= act %>" <%= selectedAction === act ? 'selected' : '' %>><%= act %></option>
+      <% }); %>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Filter Logs</button>
+    <a href="/librarian/audit" class="btn btn-sm">Reset</a>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Actor</th>
+          <th>Role</th>
+          <th>Action</th>
+          <th>Target Entity</th>
+          <th>Event Details Snapshot</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (logs.length === 0) { %>
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 20px;">No audit log events found.</td>
+          </tr>
+        <% } else { %>
+          <% logs.forEach(function(log) { %>
+            <tr>
+              <td style="font-size: 12px; white-space: nowrap;"><%= formatDateTime(log.timestamp) %></td>
+              <td>
+                <strong><%= log.actorName %></strong>
+              </td>
+              <td><span class="role-tag"><%= log.actorRole %></span></td>
+              <td>
+                <span class="mono" style="font-weight: 700; color: var(--color-gov-navy);"><%= log.action %></span>
+              </td>
+              <td>
+                <span class="mono"><%= log.targetType %></span>
+              </td>
+              <td style="font-size: 12px; color: var(--color-text-secondary);">
+                <% if (log.details) { %>
+                  <code><%= JSON.stringify(log.details).slice(0, 160) %><%= JSON.stringify(log.details).length > 160 ? '...' : '' %></code>
+                <% } else { %>
+                  —
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <% if (totalPages > 1) { %>
+    <ul class="pagination">
+      <% for (let p = 1; p <= totalPages; p++) { %>
+        <li class="<%= currentPage === p ? 'active' : '' %>">
+          <a href="/librarian/audit?page=<%= p %>&action=<%= selectedAction %>"><%= p %></a>
+        </li>
+      <% } %>
+    </ul>
+  <% } %>
+</div>
+
+<%- include('../../partials/footer') %>

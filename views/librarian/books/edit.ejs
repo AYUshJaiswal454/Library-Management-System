@@ -1,0 +1,80 @@
+<%- include('../../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <a href="/librarian/books">Titles</a> / <span>Edit Record</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Bibliographic Title Record</h1>
+    <div class="page-subtitle">Update cataloguing metadata for <strong><%= book.title %></strong></div>
+  </div>
+</div>
+
+<div style="max-width: 780px;">
+  <div class="panel">
+    <form action="/librarian/books/<%= book._id %>" method="POST">
+      <div class="form-group">
+        <label for="title" class="form-label required">Book Title</label>
+        <input type="text" id="title" name="title" class="form-control" value="<%= book.title %>" required>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="author" class="form-label required">Author(s)</label>
+          <input type="text" id="author" name="author" class="form-control" value="<%= book.author %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="isbn" class="form-label required">ISBN</label>
+          <input type="text" id="isbn" name="isbn" class="form-control mono" value="<%= book.isbn %>" required>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="category" class="form-label required">Subject Category</label>
+          <select id="category" name="category" class="form-control" required>
+            <% categories.forEach(function(cat) { %>
+              <option value="<%= cat._id %>" <%= book.category && book.category.toString() === cat._id.toString() ? 'selected' : '' %>><%= cat.name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="publisher" class="form-label">Publisher</label>
+          <input type="text" id="publisher" name="publisher" class="form-control" value="<%= book.publisher || '' %>">
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="form-group">
+          <label for="publicationYear" class="form-label">Publication Year</label>
+          <input type="number" id="publicationYear" name="publicationYear" class="form-control" value="<%= book.publicationYear || '' %>">
+        </div>
+
+        <div class="form-group">
+          <label for="language" class="form-label">Language</label>
+          <input type="text" id="language" name="language" class="form-control" value="<%= book.language || 'English' %>">
+        </div>
+
+        <div class="form-group">
+          <label for="callNumber" class="form-label">Call Number</label>
+          <input type="text" id="callNumber" name="callNumber" class="form-control mono" value="<%= book.callNumber || '' %>">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description" class="form-label">Synopsis / Notes</label>
+        <textarea id="description" name="description" class="form-control" rows="3"><%= book.description || '' %></textarea>
+      </div>
+
+      <div style="margin-top: 24px; display: flex; gap: 12px;">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/librarian/books" class="btn">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

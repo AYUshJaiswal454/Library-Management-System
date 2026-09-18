@@ -1,0 +1,31 @@
+<% if (typeof success !== 'undefined' && success && success.length > 0) { %>
+  <div class="alert alert-success" role="alert" aria-live="polite">
+    <% success.forEach(function(msg) { %>
+      <div><%= msg %></div>
+    <% }); %>
+  </div>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+  <div class="alert alert-danger" role="alert" aria-live="polite">
+    <% error.forEach(function(msg) { %>
+      <div><%= msg %></div>
+    <% }); %>
+  </div>
+<% } %>
+
+<% if (typeof warning !== 'undefined' && warning && warning.length > 0) { %>
+  <div class="alert alert-warning" role="alert" aria-live="polite">
+    <% warning.forEach(function(msg) { %>
+      <div><%= msg %></div>
+    <% }); %>
+  </div>
+<% } %>
+
+<% if (typeof info !== 'undefined' && info && info.length > 0) { %>
+  <div class="alert alert-info" role="alert" aria-live="polite">
+    <% info.forEach(function(msg) { %>
+      <div><%= msg %></div>
+    <% }); %>
+  </div>
+<% } %>

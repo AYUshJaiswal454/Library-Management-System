@@ -1,0 +1,175 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/">Home</a> / <span>Member Dashboard</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Member Account & Circulation Dashboard</h1>
+    <div class="page-subtitle">Welcome back, <strong><%= currentUser.name %></strong> (Member ID: <span class="mono"><%= currentUser.memberId %></span>)</div>
+  </div>
+
+  <div>
+    <a href="/catalogue" class="btn btn-primary">+ Search Catalogue & Place Holds</a>
+  </div>
+</div>
+
+<!-- Account Alert Banner if Restricted or Overdue -->
+<% if (currentUser.isRestricted) { %>
+  <div class="alert alert-danger">
+    <strong>Account Borrowing Restricted:</strong> <%= currentUser.restrictionReason || 'Administrative hold applied' %>. Please contact the circulation desk.
+  </div>
+<% } %>
+
+<% if (overdueLoans.length > 0) { %>
+  <div class="alert alert-danger">
+    <strong>Overdue Alert:</strong> You have <strong><%= overdueLoans.length %></strong> item(s) past the return due date. Please return immediately to prevent additional fine accrual.
+  </div>
+<% } else if (dueSoonLoans.length > 0) { %>
+  <div class="alert alert-warning">
+    <strong>Upcoming Due Date:</strong> You have <strong><%= dueSoonLoans.length %></strong> item(s) due within the next 3 days.
+  </div>
+<% } %>
+
+<!-- Metric Stats Overview -->
+<div class="grid-4" style="margin-bottom: 24px;">
+  <div class="stat-box">
+    <div class="stat-label">Active Loans</div>
+    <div class="stat-value"><%= activeLoans.length %> <span style="font-size: 14px; font-weight: normal; color: var(--color-text-muted);">/ <%= settings.maxLoanLimit %> Max</span></div>
+    <div class="stat-subtext"><a href="/member/loans">View borrowing details →</a></div>
+  </div>
+
+  <div class="stat-box <%= overdueLoans.length > 0 ? 'stat-danger' : '' %>">
+    <div class="stat-label">Overdue Loans</div>
+    <div class="stat-value"><%= overdueLoans.length %></div>
+    <div class="stat-subtext"><%= overdueLoans.length > 0 ? 'Requires immediate return' : 'No items overdue' %></div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-label">Active Holds & Pickups</div>
+    <div class="stat-value"><%= activeHolds.length %></div>
+    <div class="stat-subtext"><a href="/member/holds">View queue status →</a></div>
+  </div>
+
+  <div class="stat-box <%= totalUnpaidFine > 0 ? 'stat-danger' : 'stat-success' %>">
+    <div class="stat-label">Outstanding Fines</div>
+    <div class="stat-value"><%= formatCurrency(totalUnpaidFine) %></div>
+    <div class="stat-subtext"><a href="/member/fines">View fines ledger →</a></div>
+  </div>
+</div>
+
+<!-- Current Loans & Active Holds Grid -->
+<div class="grid-2">
+  <!-- Active Loans Section -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Current Loans On Hand</h2>
+      <a href="/member/loans" class="btn btn-sm">All Loans</a>
+    </div>
+
+    <% if (activeLoans.length === 0) { %>
+      <div class="empty-state" style="padding: 20px;">
+        <div class="empty-title">No Active Loans</div>
+        <div class="empty-desc">You do not have any physical books checked out at present.</div>
+      </div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title & Barcode</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% activeLoans.forEach(function(loan) { %>
+              <% const isOverdue = loan.status === 'OVERDUE' || new Date(loan.dueDate) < new Date(); %>
+              <tr>
+                <td>
+                  <strong><a href="/catalogue/<%= loan.book._id %>"><%= loan.book.title %></a></strong>
+                  <div style="font-size: 11px; color: var(--color-text-muted);">Barcode: <span class="mono"><%= loan.bookCopy.barcode %></span></div>
+                </td>
+                <td>
+                  <strong style="<%= isOverdue ? 'color: #b91c1c;' : '' %>">
+                    <%= formatDate(loan.dueDate) %>
+                  </strong>
+                </td>
+                <td>
+                  <span class="status-badge <%= isOverdue ? 'status-overdue' : 'status-available' %>">
+                    <%= isOverdue ? '[OVERDUE]' : '[ACTIVE]' %>
+                  </span>
+                </td>
+                <td>
+                  <% if (!isOverdue) { %>
+                    <form action="/member/loans/<%= loan._id %>/renew" method="POST" style="display: inline;">
+                      <button type="submit" class="btn btn-sm">Renew</button>
+                    </form>
+                  <% } else { %>
+                    <span style="font-size: 12px; color: #b91c1c; font-weight: 600;">Return at Desk</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Holds & Pickup Requests Section -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Active Hold Reservations</h2>
+      <a href="/member/holds" class="btn btn-sm">All Holds</a>
+    </div>
+
+    <% if (activeHolds.length === 0) { %>
+      <div class="empty-state" style="padding: 20px;">
+        <div class="empty-title">No Active Holds</div>
+        <div class="empty-desc">You have no pending reservations. Place holds directly on titles with 0 shelf availability.</div>
+      </div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Hold Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% activeHolds.forEach(function(hold) { %>
+              <tr>
+                <td>
+                  <strong><a href="/catalogue/<%= hold.book._id %>"><%= hold.book.title %></a></strong>
+                  <div style="font-size: 11px; color: var(--color-text-muted);">Requested: <%= formatDate(hold.requestDate) %></div>
+                </td>
+                <td>
+                  <% if (hold.status === 'AVAILABLE_FOR_PICKUP') { %>
+                    <span class="status-badge status-reserved">[READY FOR PICKUP]</span>
+                    <div style="font-size: 11px; color: #1e3a8a; margin-top: 2px;">
+                      Pickup by: <strong><%= formatDate(hold.pickupDeadline) %></strong>
+                    </div>
+                  <% } else { %>
+                    <span class="status-badge status-neutral">[IN QUEUE: #<%= hold.queuePosition %>]</span>
+                  <% } %>
+                </td>
+                <td>
+                  <form action="/member/holds/<%= hold._id %>/cancel" method="POST">
+                    <button type="submit" class="btn btn-sm btn-danger" data-confirm="Cancel this hold reservation?">Cancel</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

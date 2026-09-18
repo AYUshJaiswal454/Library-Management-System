@@ -1,0 +1,99 @@
+<%- include('../../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <a href="/librarian/books">Titles</a> / <span>Ingest Title</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Ingest New Bibliographic Title & Inception Copies</h1>
+    <div class="page-subtitle">Register master metadata and generate physical accession barcodes</div>
+  </div>
+</div>
+
+<div style="max-width: 780px;">
+  <div class="panel">
+    <form action="/librarian/books" method="POST">
+      <div class="form-group">
+        <label for="title" class="form-label required">Book Title</label>
+        <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Introduction to Algorithms" required autofocus>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="author" class="form-label required">Primary Author(s)</label>
+          <input type="text" id="author" name="author" class="form-control" placeholder="e.g. Thomas H. Cormen, Charles E. Leiserson" required>
+        </div>
+
+        <div class="form-group">
+          <label for="isbn" class="form-label required">ISBN / Standard Identifier</label>
+          <input type="text" id="isbn" name="isbn" class="form-control mono" placeholder="e.g. 9780262033848" required>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="category" class="form-label required">Subject Category</label>
+          <select id="category" name="category" class="form-control" required>
+            <option value="">Select Category...</option>
+            <% categories.forEach(function(cat) { %>
+              <option value="<%= cat._id %>"><%= cat.name %> (<%= cat.code %>)</option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="publisher" class="form-label">Publisher</label>
+          <input type="text" id="publisher" name="publisher" class="form-control" placeholder="e.g. MIT Press">
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="form-group">
+          <label for="publicationYear" class="form-label">Publication Year</label>
+          <input type="number" id="publicationYear" name="publicationYear" class="form-control" placeholder="e.g. 2022" min="1000" max="2100">
+        </div>
+
+        <div class="form-group">
+          <label for="language" class="form-label">Language</label>
+          <input type="text" id="language" name="language" class="form-control" value="English">
+        </div>
+
+        <div class="form-group">
+          <label for="callNumber" class="form-label">Call / Classification Number</label>
+          <input type="text" id="callNumber" name="callNumber" class="form-control mono" placeholder="e.g. QA76.6 .C662">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description" class="form-label">Synopsis / Abstract</label>
+        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Brief subject summary..."></textarea>
+      </div>
+
+      <div class="panel" style="background-color: var(--color-bg-subtle); border: 1px dashed var(--color-border); padding: 16px; margin-top: 16px;">
+        <h3 style="font-size: 14px; text-transform: uppercase; margin-bottom: 12px; color: var(--color-gov-navy);">Initial Physical Copies Ingestion</h3>
+        
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="initialCopiesCount" class="form-label">Number of Copies to Ingest</label>
+            <input type="number" id="initialCopiesCount" name="initialCopiesCount" class="form-control" value="2" min="1" max="20">
+            <span class="form-hint">Physical copies will be auto-assigned barcodes.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="initialShelfLocation" class="form-label">Default Shelving Location</label>
+            <input type="text" id="initialShelfLocation" name="initialShelfLocation" class="form-control" value="Main Stacks - Row 2 / Shelf A">
+            <span class="form-hint">Physical stack location in the building.</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; display: flex; gap: 12px;">
+        <button type="submit" class="btn btn-primary">Save Title & Generate Copies</button>
+        <a href="/librarian/books" class="btn">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

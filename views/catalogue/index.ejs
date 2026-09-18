@@ -1,0 +1,166 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <span>Public Access Catalogue</span> / <span>Holdings Search</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Library Catalogue & Holdings Discovery</h1>
+    <div class="page-subtitle">Search bibliographic records and live copy shelf availability across all collections</div>
+  </div>
+</div>
+
+<!-- Search & Filter Controls -->
+<div class="panel" style="margin-bottom: 24px;">
+  <form action="/catalogue" method="GET">
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+      <div style="flex: 3; min-width: 260px;">
+        <label for="q" class="form-label">Search Query</label>
+        <input 
+          type="search" 
+          id="q" 
+          name="q" 
+          class="form-control" 
+          value="<%= searchQuery %>" 
+          placeholder="Search by Title, Author, ISBN, or Publisher..."
+        >
+      </div>
+
+      <div style="flex: 2; min-width: 180px;">
+        <label for="category" class="form-label">Category / Subject</label>
+        <select id="category" name="category" class="form-control">
+          <option value="ALL">All Categories</option>
+          <% categories.forEach(function(cat) { %>
+            <option value="<%= cat._id %>" <%= selectedCategory === cat._id.toString() ? 'selected' : '' %>><%= cat.name %> (<%= cat.code %>)</option>
+          <% }); %>
+        </select>
+      </div>
+
+      <div style="flex: 1; min-width: 140px;">
+        <label for="language" class="form-label">Language</label>
+        <select id="language" name="language" class="form-control">
+          <option value="ALL">All Languages</option>
+          <% languages.forEach(function(lang) { %>
+            <% if (lang) { %>
+              <option value="<%= lang %>" <%= selectedLanguage === lang ? 'selected' : '' %>><%= lang %></option>
+            <% } %>
+          <% }); %>
+        </select>
+      </div>
+
+      <div style="flex: 1; min-width: 140px;">
+        <label for="sort" class="form-label">Sort By</label>
+        <select id="sort" name="sort" class="form-control">
+          <option value="title_asc" <%= currentSort === 'title_asc' ? 'selected' : '' %>>Title (A-Z)</option>
+          <option value="title_desc" <%= currentSort === 'title_desc' ? 'selected' : '' %>>Title (Z-A)</option>
+          <option value="year_desc" <%= currentSort === 'year_desc' ? 'selected' : '' %>>Year (Newest)</option>
+          <option value="year_asc" <%= currentSort === 'year_asc' ? 'selected' : '' %>>Year (Oldest)</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 8px; border-top: 1px solid var(--color-border-light);">
+      <div>
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer;">
+          <input type="checkbox" name="available_only" value="true" <%= availableOnly ? 'checked' : '' %>>
+          <strong>Show Available Copies Only (On Shelf Now)</strong>
+        </label>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <a href="/catalogue" class="btn btn-sm">Reset Filters</a>
+        <button type="submit" class="btn btn-sm btn-primary">Filter Results</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Results Header -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+  <div style="font-size: 14px; color: var(--color-text-secondary);">
+    Displaying <strong><%= books.length %></strong> of <strong><%= totalResults %></strong> titles found
+    <% if (searchQuery) { %> for "<strong><%= searchQuery %></strong>"<% } %>
+  </div>
+</div>
+
+<!-- Book Catalogue Cards Grid -->
+<% if (books.length === 0) { %>
+  <div class="empty-state">
+    <div class="empty-icon">📖</div>
+    <div class="empty-title">No Bibliographic Titles Found</div>
+    <div class="empty-desc">No records match your query and filter criteria. Try broadening your search or resetting the availability filter.</div>
+    <a href="/catalogue" class="btn btn-primary">View All Titles</a>
+  </div>
+<% } else { %>
+  <div class="catalogue-grid">
+    <% books.forEach(function(book) { %>
+      <% const stats = availabilityMap[book._id.toString()] || { total: 0, available: 0, issued: 0, reserved: 0, pendingHolds: 0 }; %>
+      <div class="book-card">
+        <div>
+          <div class="book-category"><%= book.category ? book.category.name : 'General' %></div>
+          <h2 class="book-title">
+            <a href="/catalogue/<%= book._id %>"><%= book.title %></a>
+          </h2>
+          <div class="book-author">By <%= book.author %></div>
+
+          <div class="book-meta-grid">
+            <div>ISBN: <span class="mono"><%= book.isbn %></span></div>
+            <div>Pub Year: <%= book.publicationYear || '—' %> · Lang: <%= book.language || 'English' %></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="book-availability-bar">
+            <div>
+              <% if (stats.available > 0) { %>
+                <span class="status-badge status-available">[<%= stats.available %> / <%= stats.total %> ON SHELF]</span>
+              <% } else if (stats.reserved > 0) { %>
+                <span class="status-badge status-reserved">[0 AVAIL · <%= stats.reserved %> HELD]</span>
+              <% } else { %>
+                <span class="status-badge status-overdue">[ALL <%= stats.total %> ISSUED]</span>
+              <% } %>
+            </div>
+
+            <div style="font-size: 12px; color: var(--color-text-muted);">
+              <% if (stats.pendingHolds > 0) { %>
+                <span style="font-weight: 600; color: #b45309;"><%= stats.pendingHolds %> queued</span>
+              <% } %>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <a href="/catalogue/<%= book._id %>" class="btn btn-sm btn-block btn-primary">
+              View Copies & Shelf Locations
+            </a>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+
+  <!-- Pagination -->
+  <% if (totalPages > 1) { %>
+    <ul class="pagination" aria-label="Catalogue pagination">
+      <% if (currentPage > 1) { %>
+        <li><a href="/catalogue?page=<%= currentPage - 1 %>&q=<%= encodeURIComponent(searchQuery) %>&category=<%= selectedCategory %>&language=<%= selectedLanguage %>&sort=<%= currentSort %>&available_only=<%= availableOnly %>">« Prev</a></li>
+      <% } %>
+
+      <% for (let p = 1; p <= totalPages; p++) { %>
+        <li class="<%= currentPage === p ? 'active' : '' %>">
+          <% if (currentPage === p) { %>
+            <span aria-current="page"><%= p %></span>
+          <% } else { %>
+            <a href="/catalogue?page=<%= p %>&q=<%= encodeURIComponent(searchQuery) %>&category=<%= selectedCategory %>&language=<%= selectedLanguage %>&sort=<%= currentSort %>&available_only=<%= availableOnly %>"><%= p %></a>
+          <% } %>
+        </li>
+      <% } %>
+
+      <% if (currentPage < totalPages) { %>
+        <li><a href="/catalogue?page=<%= currentPage + 1 %>&q=<%= encodeURIComponent(searchQuery) %>&category=<%= selectedCategory %>&language=<%= selectedLanguage %>&sort=<%= currentSort %>&available_only=<%= availableOnly %>">Next »</a></li>
+      <% } %>
+    </ul>
+  <% } %>
+<% } %>
+
+<%- include('../partials/footer') %>

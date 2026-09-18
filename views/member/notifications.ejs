@@ -1,0 +1,51 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/member/dashboard">Dashboard</a> / <span>Notifications</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Notifications & Circulation Notices</h1>
+    <div class="page-subtitle">Official alerts for hold pickups, overdue notices, and system communications</div>
+  </div>
+</div>
+
+<div class="panel" style="max-width: 760px;">
+  <% if (notifications.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">🔔</div>
+      <div class="empty-title">No Notifications</div>
+      <div class="empty-desc">You are all caught up with your library circulation alerts.</div>
+    </div>
+  <% } else { %>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <% notifications.forEach(function(notif) { %>
+        <% 
+          let borderStyle = '#d1d5db';
+          let badgeClass = 'status-neutral';
+          if (notif.type === 'HOLD_READY') { borderStyle = '#1d4ed8'; badgeClass = 'status-reserved'; }
+          else if (notif.type === 'OVERDUE_ALERT') { borderStyle = '#b91c1c'; badgeClass = 'status-overdue'; }
+          else if (notif.type === 'ACCOUNT_STATUS') { borderStyle = '#15803d'; badgeClass = 'status-available'; }
+        %>
+        <div style="border: 1px solid var(--color-border); border-left: 4px solid <%= borderStyle %>; padding: 14px 16px; background-color: var(--color-bg-card);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="status-badge <%= badgeClass %>">[<%= notif.type.replace('_', ' ') %>]</span>
+              <strong><%= notif.title %></strong>
+            </div>
+            <div style="font-size: 11px; color: var(--color-text-muted);"><%= formatDateTime(notif.createdAt) %></div>
+          </div>
+          <p style="font-size: 14px; color: var(--color-text-primary); margin: 6px 0;"><%= notif.message %></p>
+          <% if (notif.link) { %>
+            <div style="margin-top: 8px; font-size: 13px;">
+              <a href="<%= notif.link %>">View Details →</a>
+            </div>
+          <% } %>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,106 @@
+<%- include('../../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <span>Title Catalogue & Copies</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Title Catalogue & Physical Inventory</h1>
+    <div class="page-subtitle">Manage bibliographic records, item barcodes, shelf locations, and copy statuses</div>
+  </div>
+
+  <div>
+    <a href="/librarian/books/new" class="btn btn-primary">+ Ingest New Title & Copies</a>
+  </div>
+</div>
+
+<!-- Search & Filter Filter -->
+<div class="panel" style="margin-bottom: 20px;">
+  <form action="/librarian/books" method="GET" class="form-inline">
+    <div style="flex: 2;">
+      <input type="search" name="q" class="form-control" value="<%= searchQuery %>" placeholder="Search Title, Author, ISBN...">
+    </div>
+    <div style="flex: 1;">
+      <select name="category" class="form-control">
+        <option value="ALL">All Categories</option>
+        <% categories.forEach(function(cat) { %>
+          <option value="<%= cat._id %>" <%= selectedCategory === cat._id.toString() ? 'selected' : '' %>><%= cat.name %></option>
+        <% }); %>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a href="/librarian/books" class="btn">Reset</a>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ISBN</th>
+          <th>Title & Author</th>
+          <th>Category</th>
+          <th>Available / Total</th>
+          <th>Circulating / Held</th>
+          <th>Damaged / Lost</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (books.length === 0) { %>
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 20px;">No titles found in inventory.</td>
+          </tr>
+        <% } else { %>
+          <% books.forEach(function(book) { %>
+            <% const stats = availMap[book._id.toString()] || { total: 0, available: 0, issued: 0, reserved: 0, damaged: 0, lost: 0 }; %>
+            <tr>
+              <td><span class="mono"><%= book.isbn %></span></td>
+              <td>
+                <strong><a href="/catalogue/<%= book._id %>"><%= book.title %></a></strong>
+                <div style="font-size: 12px; color: var(--color-text-secondary);"><%= book.author %></div>
+              </td>
+              <td><%= book.category ? book.category.name : '—' %></td>
+              <td>
+                <span class="status-badge <%= stats.available > 0 ? 'status-available' : 'status-overdue' %>">
+                  [<%= stats.available %> / <%= stats.total %> ON SHELF]
+                </span>
+              </td>
+              <td>
+                <span style="font-size: 12px;"><%= stats.issued %> Issued · <%= stats.reserved %> Held</span>
+              </td>
+              <td>
+                <% if (stats.damaged > 0 || stats.lost > 0) { %>
+                  <span style="color: #b91c1c; font-size: 12px; font-weight: 600;"><%= stats.damaged %> Damaged · <%= stats.lost %> Lost</span>
+                <% } else { %>
+                  <span style="color: var(--color-text-muted); font-size: 12px;">0 non-circ</span>
+                <% } %>
+              </td>
+              <td>
+                <div style="display: flex; gap: 6px;">
+                  <a href="/librarian/books/<%= book._id %>/copies" class="btn btn-sm">Manage Copies (<%= stats.total %>)</a>
+                  <a href="/librarian/books/<%= book._id %>/edit" class="btn btn-sm">Edit</a>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <% if (totalPages > 1) { %>
+    <ul class="pagination">
+      <% for (let p = 1; p <= totalPages; p++) { %>
+        <li class="<%= currentPage === p ? 'active' : '' %>">
+          <a href="/librarian/books?page=<%= p %>&q=<%= encodeURIComponent(searchQuery) %>&category=<%= selectedCategory %>"><%= p %></a>
+        </li>
+      <% } %>
+    </ul>
+  <% } %>
+</div>
+
+<%- include('../../partials/footer') %>

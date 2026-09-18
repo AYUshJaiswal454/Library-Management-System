@@ -1,0 +1,286 @@
+<%- include('../../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <a href="/librarian/members">Members</a> / <span><%= member.name %> (<%= member.memberId %>)</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Patron Circulation Record: <%= member.name %></h1>
+    <div class="page-subtitle">Member ID: <span class="mono"><%= member.memberId %></span> · Registered Email: <%= member.email %></div>
+  </div>
+
+  <div>
+    <span class="status-badge <%= member.isRestricted ? 'status-overdue' : 'status-available' %>">
+      <%= member.isRestricted ? '[ACCOUNT RESTRICTED]' : '[ACCOUNT ACTIVE / IN GOOD STANDING]' %>
+    </span>
+  </div>
+</div>
+
+<!-- Profile Info & Account Restriction Controls -->
+<div class="grid-2" style="margin-bottom: 24px;">
+  <!-- Details Table -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Patron Details</h2>
+    </div>
+
+    <table class="data-table">
+      <tbody>
+        <tr>
+          <th>Department / Batch</th>
+          <td><%= member.departmentOrBatch || '—' %></td>
+        </tr>
+        <tr>
+          <th>Contact Phone</th>
+          <td><%= member.phone || '—' %></td>
+        </tr>
+        <tr>
+          <th>Membership Valid Until</th>
+          <td><%= formatDate(member.membershipExpiresAt) %></td>
+        </tr>
+        <tr>
+          <th>Current Active Loans</th>
+          <td><strong><%= activeLoans.length %></strong> (Policy max: <%= settings.maxLoanLimit %>)</td>
+        </tr>
+        <tr>
+          <th>Outstanding Fines Balance</th>
+          <td>
+            <strong style="<%= totalPendingFines > 0 ? 'color: #b91c1c;' : 'color: #15803d;' %>">
+              <%= formatCurrency(totalPendingFines) %>
+            </strong>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Administrative Restriction Toggle Form -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Borrowing Restriction Management</h2>
+    </div>
+
+    <form action="/librarian/members/<%= member._id %>/restriction" method="POST">
+      <div class="form-group">
+        <label class="form-label">Circulation Status</label>
+        <div>
+          <label style="margin-right: 16px; cursor: pointer;">
+            <input type="radio" name="isRestricted" value="false" <%= !member.isRestricted ? 'checked' : '' %>>
+            <strong>Active / Good Standing</strong>
+          </label>
+          <label style="cursor: pointer;">
+            <input type="radio" name="isRestricted" value="true" <%= member.isRestricted ? 'checked' : '' %>>
+            <strong style="color: #b91c1c;">Restricted / Suspended</strong>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="restrictionReason" class="form-label">Restriction Reason / Administrative Notice</label>
+        <textarea id="restrictionReason" name="restrictionReason" class="form-control" rows="2" placeholder="e.g. Failure to return long-overdue item / Unpaid loss penalty..."><%= member.restrictionReason || '' %></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-sm">Update Account Status</button>
+    </form>
+  </div>
+</div>
+
+<!-- Active Loans on Hand -->
+<div class="panel" style="margin-bottom: 24px;">
+  <div class="panel-header">
+    <h2 class="panel-title">Active Loans on Hand (<%= activeLoans.length %>)</h2>
+  </div>
+
+  <% if (activeLoans.length === 0) { %>
+    <div class="empty-state" style="padding: 16px;">
+      <div class="empty-desc">No books currently on loan to this patron.</div>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Barcode</th>
+            <th>Title & Author</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Calculated Fine</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% activeLoans.forEach(function(loan) { %>
+            <% const isOverdue = loan.status === 'OVERDUE' || new Date(loan.dueDate) < new Date(); %>
+            <tr>
+              <td><span class="mono"><%= loan.bookCopy ? loan.bookCopy.barcode : '—' %></span></td>
+              <td><strong><%= loan.book ? loan.book.title : '—' %></strong></td>
+              <td><%= formatDate(loan.issuedAt) %></td>
+              <td>
+                <strong style="<%= isOverdue ? 'color: #b91c1c;' : '' %>"><%= formatDate(loan.dueDate) %></strong>
+              </td>
+              <td>
+                <span class="status-badge <%= isOverdue ? 'status-overdue' : 'status-available' %>">
+                  <%= isOverdue ? '[OVERDUE]' : '[ACTIVE]' %>
+                </span>
+              </td>
+              <td>
+                <% if (loan.fineCalculated > 0) { %>
+                  <span style="color: #b91c1c; font-weight: 700;"><%= formatCurrency(loan.fineCalculated) %></span>
+                <% } else { %>
+                  <span>₹0</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<!-- Active Holds & Fines Grid -->
+<div class="grid-2" style="margin-bottom: 24px;">
+  <!-- Active Holds -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Active Hold Reservations (<%= holds.length %>)</h2>
+    </div>
+
+    <% if (holds.length === 0) { %>
+      <div class="empty-state" style="padding: 16px;">
+        <div class="empty-desc">No active holds on file for this member.</div>
+      </div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Deadline / Queue</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% holds.forEach(function(hold) { %>
+              <tr>
+                <td><strong><%= hold.book ? hold.book.title : '—' %></strong></td>
+                <td>
+                  <% if (hold.status === 'AVAILABLE_FOR_PICKUP') { %>
+                    <span class="status-badge status-reserved">[READY FOR PICKUP]</span>
+                  <% } else { %>
+                    <span class="status-badge status-neutral">[QUEUED]</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (hold.status === 'AVAILABLE_FOR_PICKUP') { %>
+                    <span style="color: #1e40af;">Due: <%= formatDate(hold.pickupDeadline) %></span>
+                  <% } else { %>
+                    <span>Queue Position #<%= hold.queuePosition %></span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Fines Ledger -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Fines & Penalties Ledger (<%= fines.length %>)</h2>
+    </div>
+
+    <% if (fines.length === 0) { %>
+      <div class="empty-state" style="padding: 16px;">
+        <div class="empty-desc">Zero fine records found.</div>
+      </div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% fines.forEach(function(fine) { %>
+              <tr>
+                <td style="font-size: 12px;"><%= formatDate(fine.createdAt) %></td>
+                <td><strong><%= formatCurrency(fine.amount) %></strong> (<%= fine.daysOverdue %>d)</td>
+                <td>
+                  <% if (fine.status === 'PENDING') { %>
+                    <span class="status-badge status-overdue">[UNPAID]</span>
+                  <% } else if (fine.status === 'PAID') { %>
+                    <span class="status-badge status-available">[PAID]</span>
+                  <% } else { %>
+                    <span class="status-badge status-neutral">[WAIVED]</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (fine.status === 'PENDING') { %>
+                    <form action="/librarian/fines/pay" method="POST" style="display: inline;">
+                      <input type="hidden" name="fineId" value="<%= fine._id %>">
+                      <button type="submit" class="btn btn-sm btn-primary">Pay</button>
+                    </form>
+                    <form action="/librarian/fines/waive" method="POST" style="display: inline;">
+                      <input type="hidden" name="fineId" value="<%= fine._id %>">
+                      <button type="submit" class="btn btn-sm">Waive</button>
+                    </form>
+                  <% } else { %>
+                    <span style="font-size: 12px; color: var(--color-text-muted);">Settled</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Past Circulation History -->
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">Historical Borrowing Records (Past Returns)</h2>
+  </div>
+
+  <% if (pastLoans.length === 0) { %>
+    <div class="empty-state" style="padding: 16px;">
+      <div class="empty-desc">No historical borrowing records.</div>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Barcode</th>
+            <th>Title</th>
+            <th>Issued On</th>
+            <th>Returned On</th>
+            <th>Fine Charged</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pastLoans.forEach(function(loan) { %>
+            <tr>
+              <td><span class="mono"><%= loan.bookCopy ? loan.bookCopy.barcode : '—' %></span></td>
+              <td><strong><%= loan.book ? loan.book.title : '—' %></strong></td>
+              <td><%= formatDate(loan.issuedAt) %></td>
+              <td><%= formatDate(loan.returnedAt) %></td>
+              <td><%= formatCurrency(loan.fineCalculated) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../../partials/footer') %>

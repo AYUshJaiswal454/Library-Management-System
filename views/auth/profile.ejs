@@ -1,0 +1,74 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/">Home</a> / <span>Account Profile</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Member Account Profile</h1>
+    <div class="page-subtitle">Registration and privileges ledger</div>
+  </div>
+</div>
+
+<div style="max-width: 680px;">
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Institutional Identity</h2>
+      <span class="status-badge <%= user.isRestricted ? 'status-overdue' : 'status-available' %>">
+        <%= user.isRestricted ? '[ACCOUNT RESTRICTED]' : '[ACCOUNT ACTIVE / IN GOOD STANDING]' %>
+      </span>
+    </div>
+
+    <% if (user.isRestricted) { %>
+      <div class="alert alert-danger">
+        <strong>Circulation Privilege Suspension:</strong> <%= user.restrictionReason || 'Administrative restriction applied' %>
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <tbody>
+          <tr>
+            <th style="width: 200px;">Full Legal Name</th>
+            <td><strong><%= user.name %></strong></td>
+          </tr>
+          <tr>
+            <th>Member ID / Accession</th>
+            <td><span class="mono"><%= user.memberId %></span></td>
+          </tr>
+          <tr>
+            <th>Registered Email</th>
+            <td><%= user.email %></td>
+          </tr>
+          <tr>
+            <th>Account Role</th>
+            <td><span class="role-tag"><%= user.role %></span></td>
+          </tr>
+          <tr>
+            <th>Department / Batch</th>
+            <td><%= user.departmentOrBatch || '—' %></td>
+          </tr>
+          <tr>
+            <th>Contact Phone</th>
+            <td><%= user.phone || '—' %></td>
+          </tr>
+          <tr>
+            <th>Membership Expiry</th>
+            <td><%= formatDate(user.membershipExpiresAt) %></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <% if (user.role === 'MEMBER') { %>
+        <a href="/member/dashboard" class="btn btn-primary">Return to Member Dashboard</a>
+      <% } else { %>
+        <a href="/librarian/desk" class="btn btn-primary">Go to Circulation Desk</a>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

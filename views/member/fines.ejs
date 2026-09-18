@@ -1,0 +1,90 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/member/dashboard">Dashboard</a> / <span>Fines & Financial Ledger</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Fines & Account Financial Ledger</h1>
+    <div class="page-subtitle">Itemized overview of overdue charges, penalty settlements, and waivers</div>
+  </div>
+</div>
+
+<div class="stat-box <%= totalPending > 0 ? 'stat-danger' : 'stat-success' %>" style="margin-bottom: 20px; max-width: 360px;">
+  <div class="stat-label">Total Outstanding Unpaid Balance</div>
+  <div class="stat-value"><%= formatCurrency(totalPending) %></div>
+  <div class="stat-subtext">
+    <% if (totalPending > 0) { %>
+      Please settle overdue fines at the circulation desk during desk hours.
+    <% } else { %>
+      Your financial account is in good standing.
+    <% } %>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">Fines Ledger</h2>
+  </div>
+
+  <% if (fines.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">✓</div>
+      <div class="empty-title">Zero Fines on Record</div>
+      <div class="empty-desc">You have no recorded overdue fines or penalties on your account.</div>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Assessment Date</th>
+            <th>Title</th>
+            <th>Days Overdue</th>
+            <th>Fine Amount</th>
+            <th>Payment Status</th>
+            <th>Settlement Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% fines.forEach(function(fine) { %>
+            <tr>
+              <td><%= formatDate(fine.createdAt) %></td>
+              <td>
+                <% if (fine.book) { %>
+                  <strong><a href="/catalogue/<%= fine.book._id %>"><%= fine.book.title %></a></strong>
+                <% } else { %>
+                  <span>Loan Item</span>
+                <% } %>
+              </td>
+              <td><%= fine.daysOverdue %> day(s)</td>
+              <td><strong><%= formatCurrency(fine.amount) %></strong></td>
+              <td>
+                <% if (fine.status === 'PENDING') { %>
+                  <span class="status-badge status-overdue">[UNPAID]</span>
+                <% } else if (fine.status === 'PAID') { %>
+                  <span class="status-badge status-available">[PAID]</span>
+                <% } else { %>
+                  <span class="status-badge status-neutral">[WAIVED]</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (fine.status === 'PAID') { %>
+                  <div style="font-size: 12px;">Paid: <%= formatDate(fine.paidAt) %></div>
+                  <div style="font-size: 11px; color: var(--color-text-muted);">Receipt: <span class="mono"><%= fine.receiptNumber || '—' %></span></div>
+                <% } else if (fine.status === 'WAIVED') { %>
+                  <div style="font-size: 12px; color: var(--color-text-secondary);">Reason: <%= fine.waivedReason || 'Administrative waiver' %></div>
+                <% } else { %>
+                  <span style="font-size: 12px; color: #b91c1c;">Payable at Desk</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

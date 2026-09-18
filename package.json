@@ -1,0 +1,39 @@
+{
+  "name": "library-circulation-platform",
+  "version": "1.0.0",
+  "description": "Civic institutional library circulation, hold targeting, and real-time copy availability platform.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node seed/seedData.js",
+    "test": "node test/verify-flows.js"
+  },
+  "keywords": [
+    "library",
+    "circulation",
+    "opac",
+    "inventory",
+    "holds",
+    "express",
+    "mongodb",
+    "ejs"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "connect-flash": "^0.1.1",
+    "connect-mongo": "^5.1.0",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "express-validator": "^7.2.1",
+    "method-override": "^3.0.0",
+    "mongoose": "^8.13.0",
+    "morgan": "^1.10.0",
+    "sanitize-html": "^2.14.0"
+  }
+}

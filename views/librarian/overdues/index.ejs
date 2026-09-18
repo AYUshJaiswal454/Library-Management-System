@@ -1,0 +1,129 @@
+<%- include('../../partials/header') %>
+
+<div class="breadcrumb-bar">
+  <a href="/librarian/desk">Circulation</a> / <span>Overdues & Fines</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Overdues & Outstanding Fines Ledger</h1>
+    <div class="page-subtitle">Track overdue items, penalty accruals per policy, and record desk payments/waivers</div>
+  </div>
+
+  <div>
+    <span class="status-badge status-overdue" style="font-size: 13px;">
+      Total Outstanding Fines: <%= formatCurrency(totalPendingAmount) %>
+    </span>
+  </div>
+</div>
+
+<!-- 1. Live Overdue Loans -->
+<div class="panel" style="margin-bottom: 24px;">
+  <div class="panel-header">
+    <h2 class="panel-title">1. Items Currently Past Due Date (<%= overdueLoans.length %>)</h2>
+  </div>
+
+  <% if (overdueLoans.length === 0) { %>
+    <div class="empty-state" style="padding: 16px;">
+      <div class="empty-desc">No active circulation loans are currently overdue.</div>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Barcode</th>
+            <th>Title</th>
+            <th>Patron</th>
+            <th>Issued On</th>
+            <th>Due Date</th>
+            <th>Days Overdue</th>
+            <th>Fine Accrued</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% overdueLoans.forEach(function(loan) { %>
+            <% const days = Math.ceil((new Date() - new Date(loan.dueDate)) / (1000 * 60 * 60 * 24)); %>
+            <tr>
+              <td><span class="mono"><%= loan.bookCopy ? loan.bookCopy.barcode : '—' %></span></td>
+              <td><strong><a href="/catalogue/<%= loan.book ? loan.book._id : '#' %>"><%= loan.book ? loan.book.title : '—' %></a></strong></td>
+              <td>
+                <strong><%= loan.user ? loan.user.name : '—' %></strong>
+                <div style="font-size: 11px;"><span class="mono"><%= loan.user ? loan.user.memberId : '' %></span></div>
+              </td>
+              <td><%= formatDate(loan.issuedAt) %></td>
+              <td><strong style="color: #b91c1c;"><%= formatDate(loan.dueDate) %></strong></td>
+              <td><strong style="color: #b91c1c;"><%= days %> day(s)</strong></td>
+              <td><strong style="color: #b91c1c;"><%= formatCurrency(loan.fineCalculated) %></strong></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<!-- 2. Outstanding Unpaid Fines & Settlement Actions -->
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">2. Outstanding Fines Ledger (<%= pendingFines.length %>)</h2>
+  </div>
+
+  <% if (pendingFines.length === 0) { %>
+    <div class="empty-state" style="padding: 16px;">
+      <div class="empty-desc">No unpaid fines currently pending settlement.</div>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date Assessed</th>
+            <th>Patron</th>
+            <th>Associated Title</th>
+            <th>Overdue Days</th>
+            <th>Fine Amount</th>
+            <th>Desk Payment & Waiver Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pendingFines.forEach(function(fine) { %>
+            <tr>
+              <td style="font-size: 12px;"><%= formatDate(fine.createdAt) %></td>
+              <td>
+                <strong><%= fine.user ? fine.user.name : '—' %></strong>
+                <div style="font-size: 11px;"><span class="mono"><%= fine.user ? fine.user.memberId : '' %></span></div>
+              </td>
+              <td><%= fine.book ? fine.book.title : 'Loan Item' %></td>
+              <td><%= fine.daysOverdue %> day(s)</td>
+              <td><strong style="color: #b91c1c;"><%= formatCurrency(fine.amount) %></strong></td>
+              <td>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <!-- Pay Form -->
+                  <form action="/librarian/fines/pay" method="POST" style="display: flex; gap: 4px; align-items: center;">
+                    <input type="hidden" name="fineId" value="<%= fine._id %>">
+                    <select name="paymentMethod" class="form-control" style="font-size: 11px; padding: 2px 4px; height: 26px; width: 80px;">
+                      <option value="CASH">CASH</option>
+                      <option value="ONLINE">ONLINE</option>
+                      <option value="CARD">CARD</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary" style="padding: 2px 8px;">Record Payment</button>
+                  </form>
+
+                  <!-- Waive Form -->
+                  <form action="/librarian/fines/waive" method="POST" style="display: inline;">
+                    <input type="hidden" name="fineId" value="<%= fine._id %>">
+                    <input type="hidden" name="waivedReason" value="Librarian administrative desk waiver">
+                    <button type="submit" class="btn btn-sm" data-confirm="Waive this fine penalty?">Waive</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../../partials/footer') %>
