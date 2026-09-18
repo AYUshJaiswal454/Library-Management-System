@@ -78,8 +78,8 @@ $$\text{Discover} \longrightarrow \text{Real Availability} \longrightarrow \text
 ### Installation
 ```bash
 # 1. Clone repository & install dependencies
-git clone <repository-url>
-cd "Assignment 2"
+git clone https://github.com/AYUshJaiswal454/Library-Management-System.git
+cd Library-Management-System
 npm install
 
 # 2. Configure environment variables
