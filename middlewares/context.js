@@ -6,10 +6,10 @@ const contextMiddleware = async (req, res, next) => {
     const settings = await SettingService.getSettings();
     res.locals.settings = settings;
     res.locals.currentPath = req.path;
-    res.locals.success = req.flash('success');
-    res.locals.error = req.flash('error');
-    res.locals.warning = req.flash('warning');
-    res.locals.info = req.flash('info');
+    res.locals.success = (req.session && typeof req.flash === 'function') ? req.flash('success') : [];
+    res.locals.error = (req.session && typeof req.flash === 'function') ? req.flash('error') : [];
+    res.locals.warning = (req.session && typeof req.flash === 'function') ? req.flash('warning') : [];
+    res.locals.info = (req.session && typeof req.flash === 'function') ? req.flash('info') : [];
 
     // Notification count for authenticated user
     if (req.user) {
