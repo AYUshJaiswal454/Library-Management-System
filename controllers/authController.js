@@ -55,7 +55,16 @@ class AuthController {
 
       const returnTo = req.session.returnTo || (user.role === 'MEMBER' ? '/member/dashboard' : '/librarian/desk');
       delete req.session.returnTo;
-      res.redirect(returnTo);
+
+      // Explicitly persist session to MongoDB store before redirecting to avoid race condition
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('[Auth Login Session Save Error]:', saveErr);
+          req.flash('error', 'Session establishment failed. Please try again.');
+          return res.redirect('/auth/login');
+        }
+        res.redirect(returnTo);
+      });
     } catch (err) {
       console.error('[Auth Login Error]:', err);
       req.flash('error', 'An error occurred during authentication. Please try again.');
@@ -117,7 +126,16 @@ class AuthController {
       });
 
       req.flash('success', `Registration successful! Your Member ID is ${memberId}.`);
-      res.redirect('/member/dashboard');
+
+      // Explicitly persist session to MongoDB store before redirecting to avoid race condition
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('[Auth Register Session Save Error]:', saveErr);
+          req.flash('error', 'Account registered successfully. Please sign in.');
+          return res.redirect('/auth/login');
+        }
+        res.redirect('/member/dashboard');
+      });
     } catch (err) {
       console.error('[Auth Register Error]:', err);
       req.flash('error', 'Registration failed. Please check your details and try again.');
@@ -136,7 +154,11 @@ class AuthController {
       });
     }
 
-    req.session.destroy(() => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('[Auth Logout Error]:', err);
+      }
+      res.clearCookie('connect.sid', { path: '/' });
       res.redirect('/auth/login');
     });
   }

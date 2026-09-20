@@ -23,6 +23,9 @@ const apiRoutes = require('./routes/apiRoutes');
 
 const app = express();
 
+// Trust reverse proxy (Render, Cloudflare, AWS ALB) for HTTPS protocol detection & secure cookies
+app.set('trust proxy', 1);
+
 // View Engine Setup (EJS)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -39,11 +42,12 @@ app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(sanitizeBody);
 
-// Session Store Configuration - Reusing active Mongoose client
+// Session Store Configuration - Persistent MongoDB Session Store
 const sessionStore = MongoStore.create({
-  clientPromise: mongoose.connection.asPromise().then(conn => conn.getClient()),
+  mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/library_circulation',
   collectionName: 'sessions',
-  ttl: 14 * 24 * 60 * 60 // 14 days
+  ttl: 14 * 24 * 60 * 60, // 14 days
+  autoRemove: 'native'
 });
 
 app.use(
@@ -51,6 +55,7 @@ app.use(
     secret: process.env.SESSION_SECRET || 'library_circulation_secret_key_2026',
     resave: false,
     saveUninitialized: false,
+    proxy: true, // Trust reverse proxy for cookie security
     store: sessionStore,
     cookie: {
       httpOnly: true,

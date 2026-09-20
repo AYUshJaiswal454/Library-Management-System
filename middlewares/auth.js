@@ -10,7 +10,9 @@ const loadUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.session.userId).select('-passwordHash');
     if (!user) {
-      req.session.destroy();
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) console.error('[Auth Middleware] Session destroy error:', destroyErr);
+      });
       req.user = null;
       res.locals.currentUser = null;
       return next();
@@ -20,7 +22,9 @@ const loadUser = async (req, res, next) => {
     next();
   } catch (err) {
     console.error('[Auth Middleware Error] Failed to load user session:', err);
-    next(err);
+    req.user = null;
+    res.locals.currentUser = null;
+    next();
   }
 };
 
@@ -29,8 +33,14 @@ const isAuthenticated = (req, res, next) => {
     return next();
   }
   req.flash('error', 'Authentication required. Please sign in to continue.');
-  req.session.returnTo = req.originalUrl;
-  res.redirect('/auth/login');
+  if (req.session) {
+    req.session.returnTo = req.originalUrl;
+    req.session.save(() => {
+      res.redirect('/auth/login');
+    });
+  } else {
+    res.redirect('/auth/login');
+  }
 };
 
 const isLibrarian = (req, res, next) => {
