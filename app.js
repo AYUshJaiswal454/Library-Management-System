@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
@@ -38,9 +39,9 @@ app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(sanitizeBody);
 
-// Session Store Configuration
+// Session Store Configuration - Reusing active Mongoose client
 const sessionStore = MongoStore.create({
-  mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/library_circulation',
+  clientPromise: mongoose.connection.asPromise().then(conn => conn.getClient()),
   collectionName: 'sessions',
   ttl: 14 * 24 * 60 * 60 // 14 days
 });
