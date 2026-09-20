@@ -1,7 +1,8 @@
+const path = require('path');
 const http = require('http');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app = require('../app');
 const connectDB = require('../config/db');
